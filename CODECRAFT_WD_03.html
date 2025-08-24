@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CODECRAFT_WD_03</title>
+  <style>
+    :root {
+      --bg-color: #f4f4f4;
+      --text-color: #000;
+      --cell-bg: #fff;
+      --hover-bg: #e6f7ff;
+      --accent-color: #007bff;
+    }
+    .dark {
+      --bg-color: #121212;
+      --text-color: #fff;
+      --cell-bg: #333;
+      --hover-bg: #555;
+      --accent-color: #00bcd4;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    h1 {
+      margin-bottom: 10px;
+      font-size: 2.5em;
+      animation: fadeIn 1s ease-in-out;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 300px;
+      margin: 20px auto;
+    }
+    .cell {
+      width: 100%;
+      padding-top: 100%;
+      position: relative;
+      background-color: var(--cell-bg);
+      font-size: 3em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 2px solid var(--accent-color);
+      transition: background-color 0.3s, transform 0.2s;
+      overflow: hidden;
+    }
+    .cell span {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .cell:hover {
+      background-color: var(--hover-bg);
+      transform: scale(1.05);
+    }
+    .status, .scores {
+      margin: 10px;
+      font-size: 1.2em;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    button, select {
+      padding: 10px 16px;
+      margin: 8px;
+      font-size: 1em;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s, color 0.3s;
+    }
+    button {
+      background-color: var(--accent-color);
+      color: white;
+    }
+    button:hover {
+      background-color: darken(var(--accent-color), 10%);
+    }
+    select {
+      background-color: var(--cell-bg);
+      color: var(--text-color);
+      border: 1px solid var(--accent-color);
+    }
+    .theme-toggle {
+      background-color: transparent;
+      color: var(--accent-color);
+      border: 2px solid var(--accent-color);
+    }
+    .theme-toggle:hover {
+      background-color: var(--accent-color);
+      color: white;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 500px) {
+      .board {
+        max-width: 90vw;
+        gap: 5px;
+      }
+      .cell {
+        font-size: 2em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Tic-Tac-Toe</h1>
+  <div class="status" id="status">Select mode and start the game</div>
+  <div class="scores" id="scores">X: 0 | O: 0</div>
+  <select id="modeSelect">
+    <option value="2p">2 Player</option>
+    <option value="easy">Play with Computer (Easy)</option>
+    <option value="hard">Play with Computer (Hard)</option>
+  </select>
+  <button onclick="restartGame()">Start / Restart Game</button>
+  <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">Switch to Dark Mode</button>
+  <div class="board" id="board"></div>
+
+  <script>
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const scoresEl = document.getElementById('scores');
+    const modeSelect = document.getElementById('modeSelect');
+    const themeBtn = document.getElementById('themeBtn');
+
+    let board = Array(9).fill("");
+    let currentPlayer = "X";
+    let isGameOver = false;
+    let scores = { X: 0, O: 0 };
+
+    function createBoard() {
+      boardEl.innerHTML = "";
+      board.forEach((val, i) => {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index = i;
+        cell.innerHTML = `<span>${val}</span>`;
+        cell.addEventListener("click", handleClick);
+        boardEl.appendChild(cell);
+      });
+    }
+
+    function handleClick(e) {
+      const idx = e.currentTarget.dataset.index;
+      if (board[idx] !== "" || isGameOver) return;
+      board[idx] = currentPlayer;
+      e.currentTarget.querySelector("span").innerText = currentPlayer;
+
+      if (checkWinner()) {
+        statusEl.innerText = `Player ${currentPlayer} wins!`;
+        scores[currentPlayer]++;
+        updateScores();
+        isGameOver = true;
+        return;
+      }
+
+      if (board.every(cell => cell !== "")) {
+        statusEl.innerText = "It's a draw!";
+        isGameOver = true;
+        return;
+      }
+
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      statusEl.innerText = `Player ${currentPlayer}'s turn`;
+
+      if (!isGameOver && isComputerTurn()) {
+        setTimeout(() => computerMove(), 300);
+      }
+    }
+
+    function checkWinner() {
+      const wins = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      return wins.some(([a,b,c]) => board[a] && board[a] === board[b] && board[a] === board[c]);
+    }
+
+    function restartGame() {
+      board = Array(9).fill("");
+      isGameOver = false;
+      currentPlayer = "X";
+      statusEl.innerText = `Player ${currentPlayer}'s turn`;
+      createBoard();
+      if (isComputerTurn()) setTimeout(() => computerMove(), 300);
+    }
+
+    function updateScores() {
+      scoresEl.innerText = `X: ${scores.X} | O: ${scores.O}`;
+    }
+
+    function isComputerTurn() {
+      const mode = modeSelect.value;
+      return (mode === "easy" || mode === "hard") && currentPlayer === "O";
+    }
+
+    function computerMove() {
+      const mode = modeSelect.value;
+      let idx;
+      if (mode === "easy") {
+        const empty = board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+        idx = empty[Math.floor(Math.random() * empty.length)];
+      } else {
+        idx = findBestMove();
+      }
+      board[idx] = currentPlayer;
+      document.querySelector(`[data-index='${idx}'] span`).innerText = currentPlayer;
+      if (checkWinner()) {
+        statusEl.innerText = `Player ${currentPlayer} wins!`;
+        scores[currentPlayer]++;
+        updateScores();
+        isGameOver = true;
+        return;
+      }
+      if (board.every(cell => cell !== "")) {
+        statusEl.innerText = "It's a draw!";
+        isGameOver = true;
+        return;
+      }
+      currentPlayer = "X";
+      statusEl.innerText = `Player ${currentPlayer}'s turn`;
+    }
+
+    function findBestMove() {
+      function minimax(b, isMax) {
+        if (checkStaticWin(b, "O")) return { score: 1 };
+        if (checkStaticWin(b, "X")) return { score: -1 };
+        if (b.every(cell => cell !== "")) return { score: 0 };
+
+        let best = isMax ? { score: -Infinity } : { score: Infinity };
+
+        for (let i = 0; i < 9; i++) {
+          if (b[i] === "") {
+            b[i] = isMax ? "O" : "X";
+            let res = minimax(b, !isMax);
+            b[i] = "";
+            res.index = i;
+            if (isMax && res.score > best.score) best = res;
+            if (!isMax && res.score < best.score) best = res;
+          }
+        }
+        return best;
+      }
+      return minimax([...board], true).index;
+    }
+
+    function checkStaticWin(b, player) {
+      const wins = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      return wins.some(([a,b,c]) => b[a] === player && b[b] === player && b[c] === player);
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+      themeBtn.innerText = document.body.classList.contains("dark") ? "Switch to Light Mode" : "Switch to Dark Mode";
+    }
+
+    createBoard();
+  </script>
+</body>
+</html>
